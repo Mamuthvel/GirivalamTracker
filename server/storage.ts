@@ -14,6 +14,8 @@ import {
   type UpdateLocation,
   type UpdateMemberStatus
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Groups
@@ -217,7 +219,141 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  async createGroup(insertGroup: InsertGroup, code: string, expiresAt: Date): Promise<Group> {
+    const [group] = await db
+      .insert(groups)
+      .values({
+        ...insertGroup,
+        code,
+        expiresAt,
+      })
+      .returning();
+    return group;
+  }
+
+  async getGroup(id: number): Promise<Group | undefined> {
+    const [group] = await db.select().from(groups).where(eq(groups.id, id));
+    return group || undefined;
+  }
+
+  async getGroupByCode(code: string): Promise<Group | undefined> {
+    const [group] = await db.select().from(groups).where(eq(groups.code, code));
+    return group || undefined;
+  }
+
+  async deleteExpiredGroups(): Promise<void> {
+    const now = new Date();
+    const expiredGroups = await db.select().from(groups).where(eq(groups.expiresAt, now));
+    
+    for (const group of expiredGroups) {
+      // Delete associated data first
+      await db.delete(messages).where(eq(messages.groupId, group.id));
+      await db.delete(pings).where(eq(pings.groupId, group.id));
+      await db.delete(members).where(eq(members.groupId, group.id));
+      await db.delete(groups).where(eq(groups.id, group.id));
+    }
+  }
+
+  // Members
+  async createMember(insertMember: InsertMember): Promise<Member> {
+    const [member] = await db
+      .insert(members)
+      .values(insertMember)
+      .returning();
+    return member;
+  }
+
+  async getMember(id: number): Promise<Member | undefined> {
+    const [member] = await db.select().from(members).where(eq(members.id, id));
+    return member || undefined;
+  }
+
+  async getGroupMembers(groupId: number): Promise<Member[]> {
+    return await db.select().from(members).where(eq(members.groupId, groupId));
+  }
+
+  async updateMemberLocation(memberId: number, location: UpdateLocation): Promise<Member | undefined> {
+    const [member] = await db
+      .update(members)
+      .set({
+        latitude: location.latitude,
+        longitude: location.longitude,
+        lastSeen: new Date(),
+      })
+      .where(eq(members.id, memberId))
+      .returning();
+    return member || undefined;
+  }
+
+  async updateMemberStatus(memberId: number, status: UpdateMemberStatus): Promise<Member | undefined> {
+    const [member] = await db
+      .update(members)
+      .set({
+        status: status.status,
+        locationSharing: status.locationSharing,
+        pingEnabled: status.pingEnabled,
+        lastSeen: new Date(),
+      })
+      .where(eq(members.id, memberId))
+      .returning();
+    return member || undefined;
+  }
+
+  async updateMemberSocketId(memberId: number, socketId: string | null): Promise<Member | undefined> {
+    const [member] = await db
+      .update(members)
+      .set({
+        socketId,
+        lastSeen: new Date(),
+      })
+      .where(eq(members.id, memberId))
+      .returning();
+    return member || undefined;
+  }
+
+  async deleteMember(id: number): Promise<void> {
+    await db.delete(members).where(eq(members.id, id));
+  }
+
+  // Messages
+  async createMessage(insertMessage: InsertMessage): Promise<Message> {
+    const [message] = await db
+      .insert(messages)
+      .values(insertMessage)
+      .returning();
+    return message;
+  }
+
+  async getGroupMessages(groupId: number, limit: number = 50): Promise<Message[]> {
+    return await db
+      .select()
+      .from(messages)
+      .where(eq(messages.groupId, groupId))
+      .orderBy(desc(messages.createdAt))
+      .limit(limit);
+  }
+
+  // Pings
+  async createPing(insertPing: InsertPing): Promise<Ping> {
+    const [ping] = await db
+      .insert(pings)
+      .values(insertPing)
+      .returning();
+    return ping;
+  }
+
+  async getGroupPings(groupId: number, limit: number = 20): Promise<Ping[]> {
+    return await db
+      .select()
+      .from(pings)
+      .where(eq(pings.groupId, groupId))
+      .orderBy(desc(pings.createdAt))
+      .limit(limit);
+  }
+}
+
+export const storage = new DatabaseStorage();
 
 // Clean up expired groups every hour
 setInterval(() => {

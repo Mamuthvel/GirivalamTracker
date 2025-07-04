@@ -17,7 +17,7 @@ This is a real-time group tracking application built with React and Express. It 
 ### Backend Architecture
 - **Runtime**: Node.js with Express.js
 - **Language**: TypeScript
-- **Database**: PostgreSQL with Drizzle ORM
+- **Database**: PostgreSQL with Drizzle ORM (migrated from in-memory storage)
 - **Real-time Communication**: WebSockets for live updates
 - **Session Management**: PostgreSQL-backed sessions
 
@@ -94,3 +94,4 @@ Preferred communication style: Simple, everyday language.
 
 Changelog:
 - July 04, 2025. Initial setup
+- July 04, 2025. Migrated from in-memory storage to PostgreSQL database using Drizzle ORM for persistent data storage
