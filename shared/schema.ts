@@ -49,6 +49,7 @@ export const insertGroupSchema = createInsertSchema(groups).omit({
 
 export const insertMemberSchema = createInsertSchema(members).omit({
   id: true,
+  groupId: true,
   lastSeen: true,
 });
 
