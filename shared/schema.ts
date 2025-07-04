@@ -43,6 +43,8 @@ export const pings = pgTable("pings", {
 export const insertGroupSchema = createInsertSchema(groups).omit({
   id: true,
   createdAt: true,
+  code: true,
+  expiresAt: true,
 });
 
 export const insertMemberSchema = createInsertSchema(members).omit({

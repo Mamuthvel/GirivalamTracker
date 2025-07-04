@@ -17,7 +17,7 @@ import {
 
 export interface IStorage {
   // Groups
-  createGroup(group: InsertGroup): Promise<Group>;
+  createGroup(group: InsertGroup, code: string, expiresAt: Date): Promise<Group>;
   getGroup(id: number): Promise<Group | undefined>;
   getGroupByCode(code: string): Promise<Group | undefined>;
   deleteExpiredGroups(): Promise<void>;
@@ -51,11 +51,13 @@ export class MemStorage implements IStorage {
   private currentPingId = 1;
 
   // Groups
-  async createGroup(insertGroup: InsertGroup): Promise<Group> {
+  async createGroup(insertGroup: InsertGroup, code: string, expiresAt: Date): Promise<Group> {
     const id = this.currentGroupId++;
     const group: Group = {
       id,
       ...insertGroup,
+      code,
+      expiresAt,
       createdAt: new Date(),
     };
     this.groups.set(id, group);
@@ -72,33 +74,33 @@ export class MemStorage implements IStorage {
 
   async deleteExpiredGroups(): Promise<void> {
     const now = new Date();
-    for (const [id, group] of this.groups.entries()) {
+    this.groups.forEach((group, id) => {
       if (group.expiresAt < now) {
         // Delete group and all associated data
         this.groups.delete(id);
         
         // Delete members
-        for (const [memberId, member] of this.members.entries()) {
+        this.members.forEach((member, memberId) => {
           if (member.groupId === id) {
             this.members.delete(memberId);
           }
-        }
+        });
         
         // Delete messages
-        for (const [messageId, message] of this.messages.entries()) {
+        this.messages.forEach((message, messageId) => {
           if (message.groupId === id) {
             this.messages.delete(messageId);
           }
-        }
+        });
         
         // Delete pings
-        for (const [pingId, ping] of this.pings.entries()) {
+        this.pings.forEach((ping, pingId) => {
           if (ping.groupId === id) {
             this.pings.delete(pingId);
           }
-        }
+        });
       }
-    }
+    });
   }
 
   // Members
@@ -106,6 +108,12 @@ export class MemStorage implements IStorage {
     const id = this.currentMemberId++;
     const member: Member = {
       id,
+      status: "active",
+      latitude: null,
+      longitude: null,
+      locationSharing: true,
+      pingEnabled: true,
+      socketId: null,
       ...insertMember,
       lastSeen: new Date(),
     };
@@ -172,6 +180,7 @@ export class MemStorage implements IStorage {
     const id = this.currentMessageId++;
     const message: Message = {
       id,
+      type: "text",
       ...insertMessage,
       createdAt: new Date(),
     };
@@ -192,6 +201,7 @@ export class MemStorage implements IStorage {
     const id = this.currentPingId++;
     const ping: Ping = {
       id,
+      toMemberId: null,
       ...insertPing,
       createdAt: new Date(),
     };

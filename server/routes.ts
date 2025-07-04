@@ -70,11 +70,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   function broadcastToGroup(groupId: number, message: any) {
-    for (const [memberId, client] of clients.entries()) {
+    clients.forEach((client, memberId) => {
       if (client.groupId === groupId && client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify(message));
       }
-    }
+    });
   }
 
   // Generate unique group code
@@ -107,9 +107,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const group = await storage.createGroup({
         name,
-        code,
-        expiresAt,
-      });
+      }, code, expiresAt);
       
       res.json(group);
     } catch (error) {
