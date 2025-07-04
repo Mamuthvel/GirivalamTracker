@@ -15,10 +15,19 @@ interface MapProps {
   currentMember: any;
 }
 
-export default function Map({ members, currentMember }: MapProps) {
+export default function Map({ members = [], currentMember }: MapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const markersRef = useRef<Map<number, L.Marker>>(new Map());
+  const markersRef = useRef<Map<number, L.Marker>>(new Map<number, L.Marker>());
+
+  // Add safety check for required props
+  if (!members || !Array.isArray(members)) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <div className="text-gray-500 dark:text-gray-400">Loading map...</div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (!mapContainerRef.current) return;

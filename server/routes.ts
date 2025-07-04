@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { 
   insertGroupSchema, 
   insertMemberSchema, 
+  createMemberRequestSchema,
   insertMessageSchema, 
   insertPingSchema,
   updateLocationSchema,
@@ -137,7 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/groups/:groupId/members', async (req, res) => {
     try {
       const groupId = parseInt(req.params.groupId);
-      const memberData = insertMemberSchema.parse(req.body);
+      const memberData = createMemberRequestSchema.parse(req.body);
       
       const group = await storage.getGroup(groupId);
       if (!group) {

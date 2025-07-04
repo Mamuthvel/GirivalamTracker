@@ -49,8 +49,11 @@ export const insertGroupSchema = createInsertSchema(groups).omit({
 
 export const insertMemberSchema = createInsertSchema(members).omit({
   id: true,
-  groupId: true,
   lastSeen: true,
+});
+
+export const createMemberRequestSchema = insertMemberSchema.omit({
+  groupId: true,
 });
 
 export const insertMessageSchema = createInsertSchema(messages).omit({
@@ -80,6 +83,7 @@ export type Message = typeof messages.$inferSelect;
 export type Ping = typeof pings.$inferSelect;
 export type InsertGroup = z.infer<typeof insertGroupSchema>;
 export type InsertMember = z.infer<typeof insertMemberSchema>;
+export type CreateMemberRequest = z.infer<typeof createMemberRequestSchema>;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type InsertPing = z.infer<typeof insertPingSchema>;
 export type UpdateLocation = z.infer<typeof updateLocationSchema>;
