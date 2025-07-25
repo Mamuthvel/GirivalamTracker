@@ -76,7 +76,7 @@
 
 /* Custom styles for map container */
 .map-container {
-  height: calc(100vh - 80px);
+  height: calc(80vh - 80px);
 }
 
 /* Custom styles for floating elements */
@@ -114,6 +114,7 @@
 /* Custom styles for chat overlay */
 .chat-overlay {
   max-height: 80vh;
+  min-width: 100vh;
   overflow-y: auto;
 }
 

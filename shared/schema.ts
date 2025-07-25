@@ -59,6 +59,7 @@ export const createMemberRequestSchema = insertMemberSchema.omit({
 export const insertMessageSchema = createInsertSchema(messages).omit({
   id: true,
   createdAt: true,
+  groupId: true,
 });
 
 export const insertPingSchema = createInsertSchema(pings).omit({

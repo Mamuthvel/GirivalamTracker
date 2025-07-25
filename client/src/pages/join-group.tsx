@@ -10,17 +10,17 @@ import { MapPin, Users, ArrowLeft, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { initializeWebSocket } from "@/lib/websocket";
 import { startLocationTracking } from "@/lib/location";
-import Map from "@/components/map";
 import MemberList from "@/components/member-list";
 import Chat from "@/components/chat";
 import Settings from "@/components/settings";
 import QuickActions from "@/components/quick-actions";
+import MapView from "@/components/map";
 
 export default function JoinGroup() {
   const params = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  
+
   const [memberName, setMemberName] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const [currentGroup, setCurrentGroup] = useState<any>(null);
@@ -31,7 +31,10 @@ export default function JoinGroup() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const groupCode = params.code;
-
+  const [Open, setOpen] = useState<boolean>(false);
+  const onOpenChange = () => {
+    setOpen(!Open)
+  }
   // Check if user is already in a group
   useEffect(() => {
     const storedGroup = localStorage.getItem('currentGroup');
@@ -56,13 +59,11 @@ export default function JoinGroup() {
       // Initialize WebSocket connection
       const ws = initializeWebSocket(member.id, {
         onMemberUpdated: (updatedMember) => {
-          setMembers(prev => prev.map(m => 
-            m.id === updatedMember.id ? updatedMember : m
+          setMembers(prev => prev.map(m => m.id === updatedMember.id ? updatedMember : m
           ));
         },
         onLocationUpdated: (updatedMember) => {
-          setMembers(prev => prev.map(m => 
-            m.id === updatedMember.id ? updatedMember : m
+          setMembers(prev => prev.map(m => m.id === updatedMember.id ? updatedMember : m
           ));
         },
         onNewMessage: (message) => {
@@ -71,6 +72,9 @@ export default function JoinGroup() {
         onMemberLeft: (memberId) => {
           setMembers(prev => prev.filter(m => m.id !== memberId));
         },
+        onNewPing: function (ping: any): void {
+          throw new Error("Function not implemented.");
+        }
       });
 
       // Start location tracking
@@ -141,23 +145,23 @@ export default function JoinGroup() {
     setIsJoining(true);
 
     try {
-      const response = await apiRequest("POST", `/api/groups/${group.id}/members`, {
+      const response = await apiRequest("POST", `/api/groups/${group?.id}/members`, {
         name: memberName.trim(),
         status: "active",
       });
 
       const member = await response.json();
-      
+
       // Store in localStorage
       localStorage.setItem('currentGroup', JSON.stringify(group));
       localStorage.setItem('currentMember', JSON.stringify(member));
-      
+
       setCurrentGroup(group);
       setCurrentMember(member);
-      
+
       // Initialize tracking
       await initializeTracking(group, member);
-      
+
       toast({
         title: "Success",
         description: "Joined group successfully!",
@@ -178,12 +182,12 @@ export default function JoinGroup() {
 
     try {
       await apiRequest("DELETE", `/api/members/${currentMember.id}`);
-      
+
       localStorage.removeItem('currentGroup');
       localStorage.removeItem('currentMember');
-      
+
       navigate('/');
-      
+
       toast({
         title: "Left Group",
         description: "You have left the group",
@@ -217,13 +221,14 @@ export default function JoinGroup() {
 
   const sendPing = async (toMemberId?: number) => {
     if (!currentGroup || !currentMember) return;
+    console.log(currentGroup, 'cur');
 
     try {
       await apiRequest("POST", `/api/groups/${currentGroup.id}/pings`, {
         fromMemberId: currentMember.id,
         toMemberId: toMemberId || null,
       });
-      
+
       toast({
         title: "Ping Sent",
         description: toMemberId ? "Ping sent to member" : "Ping sent to all members",
@@ -248,7 +253,7 @@ export default function JoinGroup() {
             <p className="text-gray-600">
               The group code "{groupCode}" is invalid or the group has expired.
             </p>
-            <Button 
+            <Button
               onClick={() => navigate('/')}
               className="bg-[#2E7D32] hover:bg-[#1B5E20] text-white"
             >
@@ -290,7 +295,7 @@ export default function JoinGroup() {
                 Group Code: <span className="font-mono font-semibold text-[#2E7D32]">{group?.code}</span>
               </p>
             </div>
-            
+
             <div>
               <Label htmlFor="memberName" className="text-[#1B5E20]">Your Name</Label>
               <Input
@@ -306,9 +311,9 @@ export default function JoinGroup() {
                 }}
               />
             </div>
-            
+
             <div className="flex gap-2">
-              <Button 
+              <Button
                 onClick={joinGroup}
                 disabled={isJoining}
                 className="flex-1 bg-[#2E7D32] hover:bg-[#1B5E20] text-white"
@@ -325,8 +330,8 @@ export default function JoinGroup() {
                   </>
                 )}
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => navigate('/')}
                 className="text-[#1B5E20] border-[#1B5E20] hover:bg-[#1B5E20] hover:text-white"
               >
@@ -340,7 +345,7 @@ export default function JoinGroup() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F1F8E9] relative overflow-hidden">
+    <div className="min-h-screen bg-[#F1F8E9] flex flex-col relative overflow-hidden">
       {/* Header */}
       <header className="bg-[#2E7D32] text-white p-4 shadow-lg relative z-20">
         <div className="flex items-center justify-between">
@@ -352,16 +357,16 @@ export default function JoinGroup() {
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="sm"
               onClick={() => setIsChatOpen(true)}
               className="text-white hover:bg-white/20"
             >
               <Users className="h-4 w-4" />
             </Button>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="sm"
               onClick={() => setIsSettingsOpen(true)}
               className="text-white hover:bg-white/20"
@@ -373,15 +378,15 @@ export default function JoinGroup() {
       </header>
 
       {/* Map Container */}
-      <div className="map-container">
-        <Map 
+      <div className="map-container flex-grow relative z-10">
+        <MapView
           members={members}
           currentMember={currentMember}
         />
       </div>
 
       {/* Member List */}
-      <MemberList 
+      <MemberList
         members={members}
         currentMember={currentMember}
         onPingMember={sendPing}
@@ -403,15 +408,17 @@ export default function JoinGroup() {
           }
         }}
         onPingAll={() => sendPing()}
+        Open={Open}
+        onOpenChange={onOpenChange}
       />
 
       {/* Quick Actions */}
-      <QuickActions 
+      <QuickActions
         onSendMessage={sendMessage}
       />
 
       {/* Chat Overlay */}
-      <Chat 
+      <Chat
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
         messages={messages}
@@ -421,7 +428,7 @@ export default function JoinGroup() {
       />
 
       {/* Settings Modal */}
-      <Settings 
+      <Settings
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         currentGroup={currentGroup}

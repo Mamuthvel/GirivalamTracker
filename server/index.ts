@@ -37,8 +37,15 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+   try {
+    // // ✅ Seed database on startup (optional: only in dev)
+    // if (process.env.NODE_ENV !== "development") {
+    //   await seedDatabase();
+    //   log("✅ Seeded database");
+    // }
   const server = await registerRoutes(app);
 
+  // Global error handler
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -47,24 +54,22 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // Load Vite dev server or static frontend based on NODE_ENV
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
+  // Port & host
+  const port = Number(process.env.PORT) || 5000;
+  const host = process.env.HOST || "localhost";
+
+  server.listen({ port, host }, () => {
+    log(`🚀 Server running at http://${host}:${port}`);
   });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error);
+    process.exit(1);
+  }
 })();

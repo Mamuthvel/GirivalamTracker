@@ -11,15 +11,15 @@ L.Icon.Default.mergeOptions({
 });
 
 interface MapProps {
-  members: any[];
-  currentMember: any;
+  members?: any[];
+  currentMember?: any;
 }
 
-export default function Map({ members = [], currentMember }: MapProps) {
+export default function MapView(props: MapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<Map<number, L.Marker>>(new Map<number, L.Marker>());
-
+  const { members = [], currentMember } = props;
   // Add safety check for required props
   if (!members || !Array.isArray(members)) {
     return (
